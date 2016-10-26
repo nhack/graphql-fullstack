@@ -56,3 +56,85 @@ Then you can call whatever query you like:
   
 * `this._queries.query('GetAllTodos')`
 * `this._queries.mutation('AddTodo')`
+
+### The Server
+The biggest challenge on the server was the modularization of the schema definitions, so that every type should have its definitions, resolvers and dependencies grouped together in a single file.
+This can be modeled as a `GraphqlType`:
+
+    export interface GraphqlType {
+      def: string;
+      resolvers?: any;
+      dependencies?: Array<GraphqlType>;
+    }
+    
+And the first type that's missing when using GraphQL is the Date type:
+
+    const DateType: GraphqlType = {
+      def: 'scalar Date',
+      resolvers: {
+        Date: {
+          __parseValue(value) {
+            return new Date(value); // value from the client
+          },
+          __serialize(value) {
+            return value.getTime(); // value sent to the client
+          },
+          __parseLiteral(ast) {
+            if (ast.kind === Kind.INT) {
+              return parseInt(ast.value, 10); // ast value is always in string format
+            }
+            return null;
+          }
+        }
+      }
+    };
+    
+Having the Date type the Todo type can be defined (which depends explicitly on the Date type):
+
+    const TodoType: GraphqlType = {
+      def: `
+        type Todo {
+          _id: ID!
+          todoMessage: String
+          createdAt: Date
+        }
+        interface TodoQuery{
+           todos: [Todo]
+        }
+        interface TodoMutation {
+          createTodo(todoMessage: String!): Todo
+          deleteTodo(_id: ID!): Todo
+        }
+      `,
+      resolvers: {
+        Query: {
+          todos: () => TodoDAO['getAll']()
+        },
+        Mutation: {
+          createTodo: (_, todo: TodoModel) => TodoDAO['createTodo'](todo),
+          deleteTodo: (_, todo: TodoModel) => TodoDAO['deleteTodo'](todo._id)
+        }
+      },
+      dependencies: [DateType]
+    };
+    
+Now the `Query` and the `Mutation` types of the `RootType` must implement the interfaces defined by the `TodoType`:
+    
+    const RootType: GraphqlType = {
+      def: `
+        type Query implements TodoQuery{
+          todos: [Todo]     
+        }
+        type Mutation implements TodoMutation{
+          createTodo(todoMessage: String!): Todo
+          deleteTodo(_id: ID!): Todo
+        }
+      `,
+      dependencies: [TodoType]
+    };
+    
+In the end when building the schema (by using `makeExecutableSchema` from [`graphql-tools`](https://github.com/apollostack/graphql-tools)) the dependencies are resolved by `DependenciesResolver`. 
+`DependenciesResolver` traverses the dependency hierarchy of types and builds the entire type definitions and resolvers for our schema starting from the `RootType`.
+
+### Future Work
+I would like to change the module loading on the client side from SystemJS to Webpack somewhere in the near future.
