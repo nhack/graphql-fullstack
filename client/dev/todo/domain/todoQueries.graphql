@@ -1,0 +1,23 @@
+query GetAllTodos {
+  todos{
+    _id
+    todoMessage
+    createdAt
+  }
+}
+
+mutation AddTodo($message: String!) {
+  createTodo(todoMessage: $message){
+    _id
+    todoMessage
+    createdAt
+  }
+}
+
+mutation RemoveTodo($id: ID!){
+  deleteTodo(_id: $id){
+    _id
+    todoMessage
+    createdAt
+  }
+}
