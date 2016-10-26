@@ -5,7 +5,7 @@ The application was created by using [`generator-ng-fullstack`](https://github.c
 The primary design goals were:
 
 * transparent backend for the client
-* a single source of queries for a certain type for the client
+* a single source of queries for a certain type on the client
 * modularity of the schema definition for the server
 
 ### Dependencies
