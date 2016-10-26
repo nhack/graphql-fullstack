@@ -1,3 +1,58 @@
-# test-todo
-[![Build Status](https://secure.travis-ci.org/nhack/test-todo.png?branch=master)](https://travis-ci.org/nhack/test-todo)
-[![Coverage Status](https://coveralls.io/repos/nhack/test-todo/badge.svg?branch=master)](https://coveralls.io/r/nhack/test-todo/?branch=master)
+# TODO Graphql
+Classic TODO fullstack app with interchangeable backend: GraphQL or REST.
+The application was created by using [`generator-ng-fullstack`](https://github.com/ericmdantas/generator-ng-fullstack) .
+## Design Goals
+The primary design goals were:
+
+* transparent backend for the client
+* a single source of queries for a certain type for the client
+* modularity of the schema definition for the server
+
+### Dependencies
+
+In order to run the project you need [node with npm](https://nodejs.org/en/) and [mongodb](https://www.mongodb.com/) installed and running.
+Then just run `npm install` and afterwards `npm start`. You can open the app at: http://localhost:3333
+
+### The Client
+The client was built so that you can easily change the backend from classical REST to Graphql.
+In order to do this there should be dedicated implementations for the `TodoService`:
+
+    export interface TodoService {
+      getAll(): Promise<Array<Todo>>
+      add(message: string): Promise<Todo>;
+      remove(message: string): Promise<any>;
+    }
+    
+    export let TODO_SERVICE = new OpaqueToken('app.todo.service');
+    
+In the module you just have to configure the provider to use the backend that you like:
+
+    @NgModule({
+      providers: [
+        {provide: TODO_SERVICE, useClass: TodoServiceGraphql}
+      ]
+    })
+    export class AppModule {
+    }
+
+#### GraphQL implementation details
+All the GraphQL queries for a certain type are stored in a single `.query` file: `todoQueries.graphql`. 
+The `.query` file was loaded by using the [`systemjs-plugin-text`](https://github.com/systemjs/plugin-text). 
+But loading text files with TypeScript it's tricky, that's why typing was needed in order to avoid compiling errors:
+
+    declare module '*!text' {
+      const _: string;
+      export =  _;
+    }
+
+Still, WebStorm complains about the way the `.graphql` file was loaded, luckily the errors can be ignored by the IDE:
+
+    //noinspection TypeScriptCheckImport
+    import * as todoQueries from '../domain/todoQueries.graphql!text';
+
+The communication with the server is made with the [`apollo-client`](https://github.com/apollostack/apollo-client), but this client can be configured to use a single query.
+In order to choose which query to be executed, you have to instantiate the `GraphqlQuery` by passing the entire list of queries: `this._queries = new GraphqlQuery(todoQueries)`. 
+Then you can call whatever query you like:
+  
+* `this._queries.query('GetAllTodos')`
+* `this._queries.mutation('AddTodo')`
