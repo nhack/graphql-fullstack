@@ -6,7 +6,7 @@ The primary design goals were:
 
 * transparent backend for the client
 * a single source of queries for a certain type on the client
-* modularity of the schema definition for the server
+* modularity of the schema definition on the server
 
 ### Dependencies
 
@@ -14,8 +14,8 @@ In order to run the project you need [node with npm](https://nodejs.org/en/) and
 Then just run `npm install` and afterwards `npm start`. You can open the app at: http://localhost:3333
 
 ### The Client
-The client was built so that you can easily change the backend from classical REST to Graphql.
-In order to do this there should be dedicated implementations for the `TodoService`:
+The client was built so that you can easily change the backend from classical REST api to GraphQL.
+In order to do this, there should be dedicated implementations for the `TodoService`:
 
 ```typescript
 export interface TodoService {
@@ -27,7 +27,7 @@ export interface TodoService {
 export let TODO_SERVICE = new OpaqueToken('app.todo.service');
 ```    
     
-In the module you just have to configure the provider to use the backend that you like:
+In the application's module you have to configure the provider to use the backend implementation that you like:
 
 ```typescript
 @NgModule({
@@ -42,7 +42,7 @@ export class AppModule {
 #### GraphQL implementation details
 All the GraphQL queries for a certain type are stored in a single `.query` file: `todoQueries.graphql`. 
 The `.query` file was loaded by using the [`systemjs-plugin-text`](https://github.com/systemjs/plugin-text). 
-But loading text files with TypeScript it's tricky, that's why typing was needed in order to avoid compiling errors:
+But loading text files with TypeScript it's tricky, that's why a typing was needed in order to avoid compilation errors:
 
 ```typescript
 declare module '*!text' {
@@ -59,7 +59,7 @@ import * as todoQueries from '../domain/todoQueries.graphql!text';
 ```    
 
 The communication with the server is made with the [`apollo-client`](https://github.com/apollostack/apollo-client), but this client can be configured to use a single query.
-In order to choose which query to be executed, you have to instantiate the `GraphqlQuery` by passing the entire list of queries: `this._queries = new GraphqlQuery(todoQueries)`. 
+In order to choose which query to be executed, you have to create an instance of `GraphqlQuery` by passing the entire list of queries: `this._queries = new GraphqlQuery(todoQueries)`. 
 Then you can call whatever query you like:
   
 * `this._queries.query('GetAllTodos')`
@@ -101,7 +101,7 @@ const DateType: GraphqlType = {
 };
 ```    
     
-Having the Date type the Todo type can be defined (which depends explicitly on the Date type):
+Having the Date type, we can define the Todo type (which depends explicitly on the Date type):
 
 ```typescript
 const TodoType: GraphqlType = {
